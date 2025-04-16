@@ -82,12 +82,16 @@
 					<uni-icons type="right" size="16" color="#999" v-if="task.actionsTranslateX !== -180" />
 				</view>
 			</view>
+			
 
 			<!-- 操作按钮区域 -->
 			<view class="actions" :style="{transform:`translateX(${task.actionsTranslateX }px)`}">
 				<button class="edit-btn" @tap="handleEdit(task)" @touchstart.stop>编辑</button>
 				<button class="delete-btn" @touchstart.stop="handleDelete(task)">删除</button>
 			</view>
+		</view>
+		<view class="noTaskInfo" v-if="filteredTasks.length == 0">
+			暂时没有任务！
 		</view>
 	</scroll-view>
 
@@ -134,7 +138,8 @@
 
 			<view class="form-item">
 				<text class="form-label">开始时间</text>
-				<uni-datetime-picker disabled=true v-model=editForm.startTime @change="onDateChange" />
+				<uni-datetime-picker v-model=editForm.startTime :start="new Date().toISOString().split('T')[0]"
+					@change="onDateChange" />
 			</view>
 
 			<view class="form-item">
@@ -374,7 +379,7 @@
 					}
 				});
 			},
-			
+
 
 		},
 		methods: {
@@ -908,18 +913,18 @@
 				}
 				this.showSortDropdown = false;
 			},
-			displayednotStartedStatus(tasks){
+			displayednotStartedStatus(tasks) {
 				const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 				tasks.forEach(task => {
-				    // 检查任务的startTime是否存在于当前时间之后
-				    if (task.startTime && dayjs(task.startTime).isAfter(now)) {
-				      // 如果满足条件，将notStartedStatus设置为1
-				      task.notStartedStatus = 1;
-				    }
-				  });
-				  
-				  // 返回更新后的tasks数组（如果需要的话）
-				  return tasks;
+					// 检查任务的startTime是否存在于当前时间之后
+					if (task.startTime && dayjs(task.startTime).isAfter(now)) {
+						// 如果满足条件，将notStartedStatus设置为1
+						task.notStartedStatus = 1;
+					}
+				});
+
+				// 返回更新后的tasks数组（如果需要的话）
+				return tasks;
 			}
 
 
@@ -1409,16 +1414,20 @@
 		align-items: center;
 		gap: 6rpx;
 	}
-	
-	.status-tag {
-	  position: absolute;
-	  right: 32rpx;
-	  bottom: 32rpx;
-	  padding: 4rpx 12rpx;
-	  border-radius: 12rpx;
-	  font-size: 12px;
-	  color: #999;
-	  background-color: #f5f5f5;
-	}
 
+	.status-tag {
+		position: absolute;
+		right: 32rpx;
+		bottom: 32rpx;
+		padding: 4rpx 12rpx;
+		border-radius: 12rpx;
+		font-size: 12px;
+		color: #999;
+		background-color: #f5f5f5;
+	}
+	
+	.noTaskInfo{
+		text-align: center;
+		margin-top: 50rpx;
+	}
 </style>

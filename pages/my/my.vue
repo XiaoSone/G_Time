@@ -26,13 +26,18 @@
 				<view class="info-item">
 					<text class="info-label">邮箱</text>
 					<view class="info-value">
-						<text>{{ userInfo.email }}</text>
-						<uni-icons type="checkmarkempty" size="16" color="#4CD964" />
+						<text>{{ userInfo.email || '未设置' }}</text>
+						<uni-icons v-if="validatePhone" type="checkmarkempty" size="16" color="#4CD964" />
+						<uni-icons type="compose" size="16" color="#999" @click="showEmailEditDialog" />
 					</view>
 				</view>
 				<view class="info-item">
 					<text class="info-label">手机号</text>
-					<text class="info-value">{{ userInfo.phone }}</text>
+					<view class="info-value">
+						<text>{{ userInfo.phone || '未设置' }}</text>
+						<uni-icons v-if="validateEmail" type="checkmarkempty" size="16" color="#4CD964" />
+						<uni-icons type="compose" size="16" color="#999" @click="showPhoneEditDialog" />
+					</view>
 				</view>
 			</view>
 
@@ -125,6 +130,38 @@
 			</view>
 		</uni-popup>
 
+		<uni-popup ref="emailEditDialog" type="dialog">
+			<view class="edit-dialog">
+				<text class="dialog-title">修改邮箱</text>
+				<input v-model="emailEditValue" type="text" placeholder="请输入新邮箱" class="dialog-input" />
+				<view class="dialog-buttons">
+					<button @click="cancelEmailEdit" class="dialog-button cancel">取消</button>
+					<button @click="handleEmailConfirm" class="dialog-button confirm">确定</button>
+				</view>
+			</view>
+		</uni-popup>
+
+		<!-- 手机号编辑弹窗 -->
+		<uni-popup ref="phoneEditDialog" type="dialog">
+			<view class="edit-dialog">
+				<text class="dialog-title">修改手机号</text>
+				<input v-model="phoneEditValue" type="number" placeholder="请输入新手机号" class="dialog-input"
+					maxlength="11" />
+
+				<view class="verify-code-section" v-if="phoneEditing">
+					<input v-model="verifyCode" type="number" placeholder="请输入验证码" class="verify-input" maxlength="6" />
+					<button class="verify-btn" :disabled="countdown > 0" @click="sendVerifyCode">
+						{{ countdown > 0 ? `${countdown}秒后重试` : '获取验证码' }}
+					</button>
+				</view>
+
+				<view class="dialog-buttons">
+					<button @click="cancelPhoneEdit" class="dialog-button cancel">取消</button>
+					<button @click="handlePhoneConfirm" class="dialog-button confirm">确定</button>
+				</view>
+			</view>
+		</uni-popup>
+
 	</view>
 </template>
 
@@ -151,7 +188,18 @@
 					oldPassword: '',
 					newPassword: '',
 					confirmPassword: '',
-				}
+				},
+
+				// 邮箱编辑相关
+				emailEditValue: '',
+				emailEditing: false,
+
+				// 手机号编辑相关
+				phoneEditValue: '',
+				phoneEditing: false,
+				verifyCode: '',
+				countdown: 0,
+				currentPhone: ''
 			}
 		},
 
@@ -294,10 +342,10 @@
 						// 关闭弹窗
 						this.$refs.passwordPopup.close();
 
-						// 密码修改成功后强制退出登录
+						// 密码修改成功后可选退出登录
 						setTimeout(() => {
 							this.handleLogout();
-						}, 1500);
+						}, 1000);
 					} else {
 						// 显示后端返回的错误信息
 						uni.showToast({
@@ -390,6 +438,209 @@
 					}
 				});
 			},
+
+			// 显示邮箱编辑弹窗
+			showEmailEditDialog() {
+				this.emailEditValue = this.userInfo.email || '';
+				this.emailEditing = true;
+				this.$refs.emailEditDialog.open();
+			},
+
+			// 邮箱输入处理
+			handleEmailInput(value) {
+				this.emailEditValue = value;
+			},
+
+			// 确认邮箱修改
+			async handleEmailConfirm() {
+				if (!this.validateEmail(this.emailEditValue)) {
+					uni.showToast({ title: '请输入正确的邮箱格式', icon: 'none' });
+					return;
+				}
+
+				try {
+					await this.updateUserInfo({ email: this.emailEditValue });
+					this.$refs.emailEditDialog.close();
+				} catch (error) {
+					console.error('邮箱修改失败:', error);
+				}
+			},
+
+			// 取消邮箱编辑
+			cancelEmailEdit() {
+				this.$refs.emailEditDialog.close();
+				this.emailEditing = false;
+				this.emailEditValue = '';
+			},
+
+			// 显示手机号编辑弹窗
+			showPhoneEditDialog() {
+				this.phoneEditValue = this.userInfo.phone || '';
+				this.phoneEditing = false;
+				this.verifyCode = '';
+				this.$refs.phoneEditDialog.open();
+			},
+
+			// 手机号输入处理
+			handlePhoneInput(value) {
+				this.phoneEditValue = value;
+			},
+
+			// 确认手机号修改
+			async handlePhoneConfirm() {
+				// 第一阶段：验证手机号格式
+				if (!this.phoneEditing) {
+					if (!this.validatePhone(this.phoneEditValue)) {
+						uni.showToast({ title: '请输入正确的手机号', icon: 'none' });
+						return;
+					}
+
+					this.currentPhone = this.phoneEditValue;
+					this.phoneEditing = true;
+					return;
+				}
+
+				// 第二阶段：验证验证码
+				if (!this.verifyCode) {
+					uni.showToast({ title: '请输入验证码', icon: 'none' });
+					return;
+				}
+
+				try {
+					// 验证验证码
+					const verifyRes = await axios.post('/user/verifyPhone', {
+						phone: this.currentPhone,
+						code: this.verifyCode
+					});
+
+					if (verifyRes.data.code !== 200) {
+						const errorMsg = verifyRes.data.msg;
+						uni.showToast({
+							title: errorMsg || '验证码错误',
+							icon: 'none'
+						});
+						return;
+						// throw new Error(verifyRes.data.msg || '验证码错误');
+					}else{
+						const dataMsg = verifyRes.data.msg;
+						uni.showToast({
+							title:dataMsg,
+							icon:'none'
+						})
+					}
+
+					// 更新手机号
+					await this.updateUserInfo({ phone: this.currentPhone });
+
+					// 关闭弹窗
+					this.$refs.phoneEditDialog.close();
+				} catch (error) {
+					let errorMessage = '手机号更新失败';
+
+					// 优先使用服务器返回的错误信息
+					if (error.response && error.response.data && error.response.data.msg) {
+						errorMessage = error.response.data.msg;
+					} else if (error.message) {
+						// 其次使用错误对象的message
+						errorMessage = error.message;
+					}
+
+					uni.showToast({
+						title: errorMessage,
+						icon: 'none',
+						duration: 2000
+					});
+				}
+			},
+
+			// 取消手机号编辑
+			// 取消手机号编辑
+			cancelPhoneEdit() {
+				this.$refs.phoneEditDialog.close();
+				this.phoneEditing = false;
+				this.phoneEditValue = '';
+				this.verifyCode = '';
+				this.countdown = 0;
+			},
+
+			// 发送验证码
+			async sendVerifyCode() {
+				if (this.countdown > 0) return;
+
+				try {
+					const res = await axios.post('/user/sms/send', {
+						phone: this.currentPhone
+					});
+
+					if (res.data.code === 200) {
+						uni.showToast({ title: '验证码已发送', icon: 'none' });
+						this.startCountdown();
+					} else {
+						throw new Error(res.data.msg || '发送失败');
+					}
+				} catch (error) {
+					uni.showToast({
+						title: error.message || '验证码发送失败',
+						icon: 'none'
+					});
+				}
+			},
+
+			// 开始倒计时
+			startCountdown() {
+				this.countdown = 60;
+				const timer = setInterval(() => {
+					this.countdown--;
+					if (this.countdown <= 0) {
+						clearInterval(timer);
+					}
+				}, 1000);
+			},
+
+			// 更新用户信息
+			async updateUserInfo(data) {
+				const token = uni.getStorageSync('token');
+				if (!token) return;
+
+				uni.showLoading({ title: '保存中...', mask: true });
+
+				try {
+					const response = await axios({
+						url: '/user/update',
+						method: 'POST',
+						headers: { 'satoken': token },
+						data: {
+							...this.userInfo,
+							...data
+						}
+					});
+
+					if (response.data.code === 200) {
+						this.userInfo = { ...this.userInfo, ...data };
+						uni.showToast({ title: '修改成功', icon: 'success' });
+					} else {
+						throw new Error(response.data.msg || '修改失败');
+					}
+				} catch (error) {
+					uni.showToast({
+						title: error.message || '修改失败',
+						icon: 'none'
+					});
+					throw error;
+				} finally {
+					uni.hideLoading();
+				}
+			},
+
+			// 验证邮箱格式
+			validateEmail(email) {
+				return /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/.test(email);
+			},
+
+			// 验证手机号格式
+			validatePhone(phone) {
+				return /^1[3-9]\d{9}$/.test(phone);
+			}
 
 
 
@@ -624,4 +875,113 @@
 		background: #007aff;
 		color: white;
 	}
+
+
+
+	/* 验证码区域样式 */
+	.verify-code-section {
+		display: flex;
+		margin-top: 15px;
+		align-items: center;
+	}
+
+	.verify-input {
+		flex: 1;
+		border: 1px solid #ddd;
+		padding: 8px 10px;
+		border-radius: 4px;
+		margin-right: 10px;
+	}
+
+	.verify-btn {
+		padding: 0 12px;
+		height: 32px;
+		line-height: 32px;
+		font-size: 12px;
+		white-space: nowrap;
+		background-color: #f5f5f5;
+		border-radius: 4px;
+		color: #666;
+	}
+
+	.verify-btn[disabled] {
+		color: #999;
+		background-color: #f9f9f9;
+	}
+
+	/* 信息项样式 */
+	.info-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px 0;
+		border-bottom: 1px solid #f5f5f5;
+	}
+
+	.info-label {
+		font-size: 16px;
+		color: #333;
+	}
+
+	.info-value {
+		display: flex;
+		align-items: center;
+		color: #666;
+	}
+
+	.uni-icons {
+		margin-left: 8px;
+	}
+
+	/* 编辑对话框样式 */
+	.edit-dialog {
+		background: #fff;
+		width: 80vw;
+		padding: 20px;
+		border-radius: 12px;
+	}
+
+	.dialog-title {
+		font-size: 18px;
+		font-weight: bold;
+		display: block;
+		text-align: center;
+		margin-bottom: 20px;
+	}
+
+	.dialog-input {
+		height: 2rem;
+		border: 1px solid #ddd;
+		padding-left: 10px;
+		border-radius: 6px;
+		width: 100%;
+		box-sizing: border-box;
+		margin-bottom: 15px;
+	}
+
+	.dialog-buttons {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 20px;
+	}
+
+	.dialog-button {
+		flex: 1;
+		padding: 10px;
+		border-radius: 6px;
+		font-size: 14px;
+	}
+
+	.dialog-button.cancel {
+		background: #f5f5f5;
+		color: #666;
+		margin-right: 10px;
+	}
+
+	.dialog-button.confirm {
+		background: #007aff;
+		color: white;
+	}
+
+	/* 验证码部分样式保持不变... */
 </style>

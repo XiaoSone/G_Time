@@ -133,15 +133,17 @@
 						});
 					} else {
 						// 登录失败，提示错误信息
+						const errMsg = response.data.msg;
 						uni.showToast({
-							title: response.data.msg || '登录失败',
+							title: errMsg || '登录失败',
 							icon: 'none'
 						});
+						return;
 					}
 				} catch (error) {
 					// 请求失败，提示错误信息
 					uni.showToast({
-						title: '请求失败，请检查网络连接',
+						title: error.response.data.msg,
 						icon: 'none'
 					});
 					console.error('请求失败:', error);

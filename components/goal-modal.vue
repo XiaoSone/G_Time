@@ -35,6 +35,11 @@
 					<text class="form-label">目标状态</text>
 					<uni-data-checkbox v-model="form.status" :localdata="statusOptions" selectedColor="#5b8ef3" />
 				</view>
+				
+				<view class="form-item" v-if="isEditMode">
+					<text class="form-label">阶段序列</text>
+					<input v-model="form.sequence" class="form-input" placeholder="请输入阶段序列号(阿拉伯数字)" maxlength="50" />
+				</view>
 			</view>
 
 			<button class="submit-btn" @click="submit" :disabled="isSubmitting">
@@ -62,7 +67,8 @@
 					description: '',
 					startDate: dayjs().format('YYYY-MM-DD'),
 					dueDate: dayjs().add(7, 'day').format('YYYY-MM-DD'),
-					status: 0
+					status: 0,
+					sequence: ''
 				},
 				statusOptions: [{
 						value: 0,
@@ -100,7 +106,8 @@
 							description: this.goal.description,
 							startDate: this.goal.startDate,
 							dueDate: this.goal.dueDate,
-							status: this.goal.status
+							status: this.goal.status,
+							sequence:this.goal.sequence
 						};
 					} else {
 						this.resetForm();

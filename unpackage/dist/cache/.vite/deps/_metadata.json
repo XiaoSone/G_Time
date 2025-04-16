@@ -1,32 +1,26 @@
 {
-  "hash": "e76f1ef6",
+  "hash": "e0f01215",
   "configHash": "6e3dc210",
-  "lockfileHash": "a6c3ae22",
-  "browserHash": "24076e38",
+  "lockfileHash": "a529c360",
+  "browserHash": "d31d9b74",
   "optimized": {
     "axios": {
       "src": "../../../../../node_modules/axios/index.js",
       "file": "axios.js",
-      "fileHash": "49c6a0b2",
+      "fileHash": "a8beb0a4",
       "needsInterop": false
     },
     "dayjs": {
       "src": "../../../../../node_modules/dayjs/dayjs.min.js",
       "file": "dayjs.js",
-      "fileHash": "323a54c2",
+      "fileHash": "2b9e941a",
       "needsInterop": true
     },
     "dayjs/plugin/isBetween": {
       "src": "../../../../../node_modules/dayjs/plugin/isBetween.js",
       "file": "dayjs_plugin_isBetween.js",
-      "fileHash": "8af74900",
+      "fileHash": "2af6f2cc",
       "needsInterop": true
-    },
-    "@qiun/ucharts": {
-      "src": "../../../../../node_modules/@qiun/ucharts/u-charts.js",
-      "file": "@qiun_ucharts.js",
-      "fileHash": "fe735f8a",
-      "needsInterop": false
     }
   },
   "chunks": {

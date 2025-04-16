@@ -4,7 +4,7 @@
 			<!-- 顶部信息区 -->
 			<view class="header">
 				<view class="header-left">
-					<view class="greeting">下午好，{{userInfo.name}}</view>
+					<view class="greeting">下午好，{{userInfo.username}}</view>
 					<view class="date">{{time}}</view>
 					<view class="task-info">今日待办: {{ todoCount }}项 已完成: {{ completedTodoCount }}项</view>
 				</view>

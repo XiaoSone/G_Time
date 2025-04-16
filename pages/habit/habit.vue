@@ -280,7 +280,7 @@
 								<text class="stats-label">总体完成率</text>
 							</view>
 							<view class="stats-card" :style="{ backgroundColor: getCategoryColor('社交') }">
-								<text class="stats-value">{{ statsData.currentStreak }}</text>
+								<text class="stats-value">{{ statsData.bestStreak }}</text>
 								<text class="stats-label">最长连续天数</text>
 							</view>
 						</view>
@@ -298,7 +298,7 @@
 							</view>
 							<qiun-data-charts type="line" :chartData="completionRateChartData" :ontouch="true"
 								:animation="true" :errorShow="false" :tooltipFormat="tooltipFormat"
-								canvasId="completionRateChart" canvas2d />
+								canvasId="completionRateChart" canvas2d  />
 						</view>
 
 						<!-- 分类分布图 -->
@@ -465,6 +465,8 @@
 					status: 1
 				} as HabitEditForm,
 
+
+
 				// 选项相关
 				frequencyOptions: [
 					{ label: '每日', value: 1 },
@@ -504,8 +506,21 @@
 					bestStreak: 0
 				} as StatsData,
 				completionRateChartData: {} as ChartData,
-				categoryDistributionChartData: {} as ChartDataPie
-				// habitsByCategoryData: {} as PieChartData
+				categoryDistributionChartData: {} as ChartDataPie,
+
+
+				enableScroll: true,
+				opts: {
+					xAxis: {
+						axisLabel: {
+							labelCount: 4,
+							rotate: 45,  // 固定旋;转角度
+						}
+					}
+				}
+
+
+
 
 			};
 		},
@@ -1208,6 +1223,7 @@
 				if (index === 2) return '#4CAF50'; // 第三名绿色
 				return '#666'; // 其他灰色
 			}
+
 
 		},
 		mounted() {
